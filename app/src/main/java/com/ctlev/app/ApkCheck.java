@@ -9,12 +9,22 @@ import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
 
 public class ApkCheck {
+    private ApkCheck(){ }
+    private static class ApkCheckHelper{
+        public static final ApkCheck Instance=new ApkCheck();
+    }
+    public static ApkCheck getInstance(){
+        return ApkCheckHelper.Instance;
+    }
     private static final String TAG = "ApkCheck";
+    private static final String DownLoadDir = "/downLoadApp/";
+
     public static AppDetails getApkDetailNotInstalled(Context context, String fullPath) throws Exception {
         if(fullPath==null || fullPath.isEmpty()) throw new Exception("Invalid Path,it should be not null and non empty string");
         if (context==null) throw new Exception("Invalid context,it should not be null");
@@ -35,25 +45,54 @@ public class ApkCheck {
         return new AppDetails(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME,BuildConfig.VERSION_CODE);
     }
 
+    public static void deleteApk(Context context){
+        String fullPath =context.getDataDir().getAbsolutePath()+DownLoadDir;
+        File downloadDir=new File(fullPath);
+        File[] fileList=downloadDir.listFiles();
+        for (File file : fileList) {
+            if (file.getName().endsWith(".apk")){
+                try {
+                    AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,file.getAbsolutePath());
+                    AppDetails getInstalledAppDetail = ApkCheck.getInstalledAppDetail(context,getApkDetailNotInstalled.packageName);
+                    if (getApkDetailNotInstalled.isSameApp(getInstalledAppDetail)) {
+                        file.delete();
+                        Log.i(TAG, "deleteApk: isSameApp done for "+file.getAbsolutePath());
+                    }
+                    if (getApkDetailNotInstalled.isDownGradable(getInstalledAppDetail)) {
+                        file.delete();
+                        Log.i(TAG, "deleteApk: isDownGradable done for "+file.getAbsolutePath());
+                    }
+                    if (getApkDetailNotInstalled.isUpGradable(getInstalledAppDetail)) {
+                        try {
+                            install((Activity) context,file);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
 
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
-    public static void compareAndUpgrade(Context context,String apkName,String packageName) throws Exception {
+    public static void compareAndUpgrade(@NonNull Context context,@NonNull String apkName,@NonNull String packageName) throws Exception {
         AppDetails currentAppDetailInstance=ApkCheck.getCurrentAppDetail();
         String currentAppDetail=currentAppDetailInstance.toString();
         Log.i(TAG, "compareAndUpgrade: getCurrentAppDetail:"+" ,"+currentAppDetail);
         //String apkName = "app-debug.apk";
         if (apkName==null || apkName.isEmpty()||packageName==null||packageName.isEmpty()) {
-            if(BuildConfig.DEBUG)
+            if(BuildConfig.DEBUG) {
                 apkName = "app-debug.apk";
+                packageName = "com.ctlev.app";
+            }
             else
                 throw new Exception("apkName:["+apkName+"] and packageName:["+packageName+"] should not be null or empty");
 
         }
-        String extension="";
-        if (!apkName.endsWith(".apk")){
-            extension=".apk";
-        }
-        String fullPath =(context.getDataDir().getAbsolutePath()+"/downLoadApp/" + apkName+extension).trim();
+
+        String fullPath =getAbosulatePath(context,apkName);
 
         // try {
         AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
@@ -113,6 +152,54 @@ public class ApkCheck {
             e.printStackTrace();
         }
     }
+
+    public static void compareAndInstall(@NonNull Context context, @NonNull String apkName) throws Exception {
+        String fullPath = getAbosulatePath(context, apkName);
+        AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
+        String apkDetail = getApkDetailNotInstalled.toString();
+        Log.i(TAG, "compareAndInstall: apk at:"+fullPath+" ,"+apkDetail);
+        String packageName=getApkDetailNotInstalled.packageName;
+        if (packageName==null||packageName.isEmpty()) {
+            if(BuildConfig.DEBUG)
+                packageName = "com.ctlev.app";
+            else
+                throw new Exception("compareAndInstall packageName:["+packageName+"] should not be null or empty");
+
+        }
+        compareAndUpgrade(context,apkName,packageName);
+    }
+    public static void compareAndInstall(@NonNull Context context, @NonNull File apk) throws Exception {
+
+        if (!apk.getAbsolutePath().contains(getDownLoadDir(context))) {
+           throw new Exception("File is not accessible,it is not in our downLoadApp folder");
+        }
+        String fullPath = apk.getAbsolutePath();
+        AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
+        String apkDetail = getApkDetailNotInstalled.toString();
+        Log.i(TAG, "compareAndInstall: apk at:"+fullPath+" ,"+apkDetail);
+        String packageName=getApkDetailNotInstalled.packageName;
+        if (packageName==null||packageName.isEmpty()) {
+            if(BuildConfig.DEBUG)
+                packageName = "com.ctlev.app";
+            else
+                throw new Exception("compareAndInstall packageName:["+packageName+"] should not be null or empty");
+
+        }
+        compareAndUpgrade(context,apk.getName(),packageName);
+    }
+    public static String getDownLoadDir(@NonNull Context context){
+        String fullPath =(context.getDataDir().getAbsolutePath()+DownLoadDir).trim();
+        return fullPath;
+    }
+    public static String getAbosulatePath(@NonNull Context context, @NonNull String apkName){
+        String extension="";
+        if (!apkName.endsWith(".apk")){
+            extension=".apk";
+        }
+        String fullPath =(getDownLoadDir(context)+ apkName+extension).trim();
+        return fullPath;
+    }
+
     final static  int UNKNOWN_RESOURCE_INTENT_REQUEST_CODE=1111;
     final static  int INSTALL_RESOURCE_INTENT_REQUEST_CODE=1112;
     public static void install(Activity context, File file){
@@ -126,9 +213,6 @@ public class ApkCheck {
         install.setDataAndType(uri, "application/vnd.android.package-archive");
         context.startActivityForResult(install,INSTALL_RESOURCE_INTENT_REQUEST_CODE);
     }
-
-
-
 
 }
 class AppDetails{

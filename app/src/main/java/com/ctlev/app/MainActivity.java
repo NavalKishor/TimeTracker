@@ -36,11 +36,22 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(unKnownSourceIntent,  ApkCheck.UNKNOWN_RESOURCE_INTENT_REQUEST_CODE);
             }
         }
+        btnCompare.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ApkCheck.getInstance().deleteApk(MainActivity.this);
+            }
+        },100);
         btnCompare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 try {
-                    ApkCheck.compareAndUpgrade(MainActivity.this,etApkName.getText().toString(),etAppId.getText().toString());
+//                    ApkCheck.getInstance().compareAndUpgrade(MainActivity.this,etApkName.getText().toString(),etAppId.getText().toString());
+                    ApkCheck.getInstance().compareAndUpgrade(MainActivity.this,etApkName.getText().toString(),
+                            ApkCheck.getInstance().getCurrentAppDetail().packageName);
+                    String fullPath =( getDataDir().getAbsolutePath()+"/downLoadApp/" + etApkName.getText().toString()+".apk").trim();
+                    ApkCheck.getInstance().compareAndUpgrade(MainActivity.this,etApkName.getText().toString(),
+                            ApkCheck.getInstance().getApkDetailNotInstalled(MainActivity.this,fullPath).packageName);
                 } catch (Exception e) {
                     e.printStackTrace();
                     tvError.setText(e.getMessage()+"\n please check the package name and apkname and it should be in downLoadApp folder of app");
