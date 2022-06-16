@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,10 +24,10 @@ public class ApkCheck {
     public static ApkCheck getInstance(){
         return ApkCheckHelper.Instance;
     }
-    private static final String TAG = "ApkCheck";
-    private static final String DownLoadDir = "/downLoadApp/";
+    private  final String TAG = "ApkCheck";
+    private  final String DownLoadDir = "/downLoadApp/";
 
-    public static AppDetails getApkDetailNotInstalled(Context context, String fullPath) throws Exception {
+    public  AppDetails getApkDetailNotInstalled(Context context, String fullPath) throws Exception {
         if(fullPath==null || fullPath.isEmpty()) throw new Exception("Invalid Path,it should be not null and non empty string");
         if (context==null) throw new Exception("Invalid context,it should not be null");
         PackageManager pm = context.getPackageManager();
@@ -33,7 +35,7 @@ public class ApkCheck {
         if (info==null)throw new Exception("Invalid Path not accessible");
         return new AppDetails( info.packageName,  info.versionName, info.versionCode );
     }
-    public static AppDetails getInstalledAppDetail(Context context,String packageName) throws Exception {
+    public  AppDetails getInstalledAppDetail(Context context,String packageName) throws Exception {
         if(packageName==null || packageName.isEmpty()) throw new Exception("Invalid packageName,it should be not null and non empty string");
         if (context==null) throw new Exception("Invalid context,it should not be null");
         PackageManager manager = context.getPackageManager();
@@ -41,19 +43,43 @@ public class ApkCheck {
         if (info==null)throw new Exception("No app found with the packageName provided :"+packageName);
         return new AppDetails( info.packageName,  info.versionName, info.versionCode );
     }
-    public static AppDetails getCurrentAppDetail(){
+    public  AppDetails getCurrentAppDetail(){
         return new AppDetails(BuildConfig.APPLICATION_ID, BuildConfig.VERSION_NAME,BuildConfig.VERSION_CODE);
     }
-
-    public static void deleteApk(Context context){
+    public boolean checkUnknownSourceInstallation(Activity context){
+        boolean chk=false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent unKnownSourceIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).setData(Uri.parse(String.format("package:%s", context.getPackageName())));
+            chk=context.getPackageManager().canRequestPackageInstalls();
+            if (!chk) {
+                context.startActivityForResult(unKnownSourceIntent,  ApkCheck.UNKNOWN_RESOURCE_INTENT_REQUEST_CODE);
+                //sentForInstall=true;
+            }
+        }
+        else{
+            try {
+                chk = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.INSTALL_NON_MARKET_APPS) == 1;
+            } catch (Settings.SettingNotFoundException e) {
+                e.printStackTrace();
+            }
+            if(!chk){
+                context.startActivityForResult(new Intent(Settings.ACTION_SECURITY_SETTINGS),  ApkCheck.UNKNOWN_RESOURCE_INTENT_REQUEST_CODE);
+                //sentForInstall=true;
+            }
+        }
+        return chk;
+    }
+    public  void deleteApk(Context context){
         String fullPath =context.getDataDir().getAbsolutePath()+DownLoadDir;
         File downloadDir=new File(fullPath);
+        if (!downloadDir.exists()) return;
         File[] fileList=downloadDir.listFiles();
+        if (fileList==null || fileList.length==0) return;
         for (File file : fileList) {
             if (file.getName().endsWith(".apk")){
                 try {
-                    AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,file.getAbsolutePath());
-                    AppDetails getInstalledAppDetail = ApkCheck.getInstalledAppDetail(context,getApkDetailNotInstalled.packageName);
+                    AppDetails getApkDetailNotInstalled = getApkDetailNotInstalled(context,file.getAbsolutePath());
+                    AppDetails getInstalledAppDetail =getInstalledAppDetail(context,getApkDetailNotInstalled.packageName);
                     if (getApkDetailNotInstalled.isSameApp(getInstalledAppDetail)) {
                         file.delete();
                         Log.i(TAG, "deleteApk: isSameApp done for "+file.getAbsolutePath());
@@ -64,7 +90,9 @@ public class ApkCheck {
                     }
                     if (getApkDetailNotInstalled.isUpGradable(getInstalledAppDetail)) {
                         try {
-                            install((Activity) context,file);
+                            if(checkUnknownSourceInstallation((Activity) context)) {
+                                install((Activity) context, file);
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -77,8 +105,8 @@ public class ApkCheck {
         }
     }
 
-    public static void compareAndUpgrade(@NonNull Context context,@NonNull String apkName,@NonNull String packageName) throws Exception {
-        AppDetails currentAppDetailInstance=ApkCheck.getCurrentAppDetail();
+    public  String compareAndUpgrade(@NonNull Context context,@NonNull String apkName,@NonNull String packageName) throws Exception {
+        AppDetails currentAppDetailInstance=getCurrentAppDetail();
         String currentAppDetail=currentAppDetailInstance.toString();
         Log.i(TAG, "compareAndUpgrade: getCurrentAppDetail:"+" ,"+currentAppDetail);
         //String apkName = "app-debug.apk";
@@ -95,7 +123,7 @@ public class ApkCheck {
         String fullPath =getAbosulatePath(context,apkName);
 
         // try {
-        AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
+        AppDetails getApkDetailNotInstalled = getApkDetailNotInstalled(context,fullPath);
         String apkDetail=getApkDetailNotInstalled.toString();
         Log.i(TAG, "compareAndUpgrade: apk at:"+fullPath+" ,"+apkDetail);
 
@@ -103,7 +131,7 @@ public class ApkCheck {
         //fullPath=getApkDetailNotInstalled.packageName;
         AppDetails getInstalledAppDetail = null;
         try {
-            getInstalledAppDetail = ApkCheck.getInstalledAppDetail(context,packageName);
+            getInstalledAppDetail = getInstalledAppDetail(context,packageName);
             apkDetail=getInstalledAppDetail.toString();
             Log.i(TAG, "compareAndUpgrade: package at:"+packageName+" ,"+apkDetail);
         } catch (Exception e) {
@@ -145,17 +173,18 @@ public class ApkCheck {
 //        }
 
         try {
-            AppDetails apkDetailObj = ApkCheck.getInstalledAppDetail(context,"com.ctlev.app");
+            AppDetails apkDetailObj = getInstalledAppDetail(context,"com.ctlev.app");
             apkDetail=apkDetailObj.toString();
             Log.i(TAG, "compareAndUpgrade: current app Details:"+apkDetail );
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return details;
     }
 
-    public static void compareAndInstall(@NonNull Context context, @NonNull String apkName) throws Exception {
+    public  void compareAndInstall(@NonNull Context context, @NonNull String apkName) throws Exception {
         String fullPath = getAbosulatePath(context, apkName);
-        AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
+        AppDetails getApkDetailNotInstalled = getApkDetailNotInstalled(context,fullPath);
         String apkDetail = getApkDetailNotInstalled.toString();
         Log.i(TAG, "compareAndInstall: apk at:"+fullPath+" ,"+apkDetail);
         String packageName=getApkDetailNotInstalled.packageName;
@@ -168,13 +197,13 @@ public class ApkCheck {
         }
         compareAndUpgrade(context,apkName,packageName);
     }
-    public static void compareAndInstall(@NonNull Context context, @NonNull File apk) throws Exception {
+    public  void compareAndInstall(@NonNull Context context, @NonNull File apk) throws Exception {
 
         if (!apk.getAbsolutePath().contains(getDownLoadDir(context))) {
            throw new Exception("File is not accessible,it is not in our downLoadApp folder");
         }
         String fullPath = apk.getAbsolutePath();
-        AppDetails getApkDetailNotInstalled = ApkCheck.getApkDetailNotInstalled(context,fullPath);
+        AppDetails getApkDetailNotInstalled = getApkDetailNotInstalled(context,fullPath);
         String apkDetail = getApkDetailNotInstalled.toString();
         Log.i(TAG, "compareAndInstall: apk at:"+fullPath+" ,"+apkDetail);
         String packageName=getApkDetailNotInstalled.packageName;
@@ -187,11 +216,11 @@ public class ApkCheck {
         }
         compareAndUpgrade(context,apk.getName(),packageName);
     }
-    public static String getDownLoadDir(@NonNull Context context){
+    public  String getDownLoadDir(@NonNull Context context){
         String fullPath =(context.getDataDir().getAbsolutePath()+DownLoadDir).trim();
         return fullPath;
     }
-    public static String getAbosulatePath(@NonNull Context context, @NonNull String apkName){
+    public  String getAbosulatePath(@NonNull Context context, @NonNull String apkName){
         String extension="";
         if (!apkName.endsWith(".apk")){
             extension=".apk";
@@ -200,9 +229,9 @@ public class ApkCheck {
         return fullPath;
     }
 
-    final static  int UNKNOWN_RESOURCE_INTENT_REQUEST_CODE=1111;
-    final static  int INSTALL_RESOURCE_INTENT_REQUEST_CODE=1112;
-    public static void install(Activity context, File file){
+    public final static  int UNKNOWN_RESOURCE_INTENT_REQUEST_CODE=1111;
+    public final static  int INSTALL_RESOURCE_INTENT_REQUEST_CODE=1112;
+    public  void install(Activity context, File file){
         if (!file.exists()) return;
         Uri uri =/*Uri.fromFile(file)*/ FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file);
         file.setReadable(true, false);
