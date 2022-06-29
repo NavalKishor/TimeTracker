@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/pun_in_out"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.puninout.PunchInOutFragment">
+    <EditText
+        android:id="@+id/etName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/txt_hint_name"
+        android:inputType="text"
+        android:autofillHints="phone"
+        app:layout_constraintBottom_toTopOf="@id/etId"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:imeOptions="actionNext"/>
+    <EditText
+        android:id="@+id/etId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/txt_hint_id"
+        android:inputType="number"
+        android:autofillHints="phone"
+        android:drawableEnd="@android:drawable/ic_menu_send"
+        app:layout_constraintBottom_toTopOf="@id/tvIn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etName"
+        android:imeOptions="actionGo"/>
+    <TextView
+        android:id="@+id/tvIn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/btn_punch_in"
+        app:layout_constraintBottom_toTopOf="@id/btnIn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etId" />
+
+    <Button
+        android:id="@+id/btnIn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_punch_in"
+        app:layout_constraintBottom_toTopOf="@id/btnOut"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvIn" />
+  <Button
+        android:id="@+id/btnOut"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_punch_out"
+        app:layout_constraintBottom_toTopOf="@id/tvOut"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnIn" />
+    <TextView
+        android:id="@+id/tvOut"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/btn_punch_out"
+        app:layout_constraintBottom_toBottomOf="@+id/circular_determinative_pb"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnOut" />
+    <ProgressBar
+        android:id="@+id/circular_determinative_pb"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        tools:progress="100"
+        android:indeterminateOnly="false"
+        android:progressDrawable="@drawable/pb_circular_determinative"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvOut" />
+    <TextView
+        android:id="@+id/progress_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:textColor="@android:color/black"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="@+id/circular_determinative_pb"
+        app:layout_constraintEnd_toEndOf="@+id/circular_determinative_pb"
+        app:layout_constraintStart_toStartOf="@+id/circular_determinative_pb"
+        app:layout_constraintTop_toTopOf="@+id/circular_determinative_pb"
+        tools:text="0%" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

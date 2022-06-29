@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">ApkCompare</string>
+    <string name="app_timetrack">Time tracker</string>
+    <string name="app_etname">Welcome back %s</string>
+    <string name="app_tvout">Your punch out time is %s</string>
+    <string name="app_tvin">Your punch in time of today is %s  ,\nSo far extra time you have covered is %.2f  min</string>
+    <string name="error_tvin">Click on EmpId fetch icon on right of EmpID</string>
+    <string name="txt_start_punch_in">You can start your punch-in for the today </string>
+    <string name="txt_hint_name">Please enter your Name</string>
+    <string name="btn_punch_in">Punch In</string>
+    <string name="btn_punch_out">Punch Out</string>
+    <string name="txt_hint_id">Please enter your id</string>
+    <string name="txt_error_id">Please enter the valid id</string>
+    <string name="txt_error_name">We don\'t have your record enter your name</string>
+    <string name="txt_success_record_msg">We have recorded you, Click on PunchIn for the Day</string>
+    <string name="geofence_transition_invalid_type">geofence transition invalid type %d</string>
 </resources>
