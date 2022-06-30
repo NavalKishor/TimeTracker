@@ -35,7 +35,20 @@ public class MainActivity extends AppCompatActivity {
 //        etApkName=findViewById(R.id.etApkName);
         apkCheck=ApkCheck.getInstance();
         apkCheck.checkUnknownSourceInstallation(this);
-
+        binding.tvError.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                   AppDetails details= apkCheck.getInstalledAppDetail(MainActivity.this,"com.example.logsupload");
+                    Log.i(TAG, "tvError onClick: details"+details);
+                    details= apkCheck.getInstalledAppDetail(MainActivity.this,"com.example.httpstest");
+                    Log.i(TAG, "tvError onClick: details"+details);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.i(TAG, "tvError onClick: fail due to exception:"+e.getMessage());
+                }
+            }
+        });
         binding.btnCompare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

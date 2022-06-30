@@ -90,5 +90,39 @@
         app:layout_constraintStart_toStartOf="@+id/circular_determinative_pb"
         app:layout_constraintTop_toTopOf="@+id/circular_determinative_pb"
         tools:text="0%" />
+        <RadioGroup
+            android:id="@+id/rgTimeUnit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circular_determinative_pb"
+            >
+            <RadioButton
+                android:id="@+id/rbtnTimeUnithr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rdbtn_hr"
+                />
+            <RadioButton
+                android:id="@+id/rbtnTimeUnitmin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rdbtn_min"
+                android:checked="true"/>
+            <RadioButton
+                android:id="@+id/rbtnTimeUnitsec"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rdbtn_sec"/>
+            <RadioButton
+                android:id="@+id/rbtnTimeUnitms"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/rdbtn_ms"/>
+        </RadioGroup>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

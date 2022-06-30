@@ -9,6 +9,10 @@
     <string name="txt_hint_name">Please enter your Name</string>
     <string name="btn_punch_in">Punch In</string>
     <string name="btn_punch_out">Punch Out</string>
+    <string name="rdbtn_hr">hr</string>
+    <string name="rdbtn_min">min</string>
+    <string name="rdbtn_sec">sec</string>
+    <string name="rdbtn_ms">ms</string>
     <string name="txt_hint_id">Please enter your id</string>
     <string name="txt_error_id">Please enter the valid id</string>
     <string name="txt_error_name">We don\'t have your record enter your name</string>

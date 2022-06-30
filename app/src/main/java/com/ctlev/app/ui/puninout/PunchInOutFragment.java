@@ -1,6 +1,8 @@
 package com.ctlev.app.ui.puninout;
 
 
+import static com.ctlev.app.ui.puninout.PunchInOutFragment.DisplayTimeIn.*;
+
 import android.Manifest;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RadioGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -55,6 +58,20 @@ public class PunchInOutFragment extends Fragment {
     //Declare timer
     CountDownTimer cTimer = null;
     JSONObject empData;
+    DisplayTimeIn showTimeUnit=MIN;
+
+    enum DisplayTimeIn{
+        HOUR("hr"),MIN("min"),SEC("sec"),MILISEC("ms");
+
+        public String getData() {
+            return data;
+        }
+
+        String data;
+        DisplayTimeIn(String data){
+            this.data=data;
+        }
+    }
     String keyTodayDate = getDateAsString(Calendar.getInstance().getTime(), null);
     boolean isTimmerOn = false;
     public static final HashMap<String, LatLng> BAY_AREA_LANDMARKS = new HashMap<String, LatLng>();
@@ -157,42 +174,37 @@ public class PunchInOutFragment extends Fragment {
             binding.etId.setText(empid);
             String empDatap=pref.getData(empid,"");
             binding.etId.setEnabled(false);
-          if( !empDatap.isEmpty() && empDatap.startsWith("{")&& empDatap.endsWith("}")){
-            try {
-                JSONObject root=new JSONObject(empDatap);
-                empData=root;
-                String name=root.getString(EName);
-                binding.etName.setText(getString(R.string.app_etname,name));
-                binding.etName.setEnabled(false);
-                long extraTillNow=root.optLong(ExtraTillNow,0l);
-                JSONObject todayData=new JSONObject(root.optString(keyTodayDate));
-                if (todayData!=null){
-                    long currentTimeMillis=System.currentTimeMillis();
-                    long punchInTime=todayData.optLong(StartTime,currentTimeMillis);
-                    if(punchInTime!=currentTimeMillis){
-                        //set the time
-                        binding.tvIn.setText(getString(R.string.app_tvin,  getDateAsString(new Date(punchInTime)),(extraTillNow*1.0/(60*1000))));
-                        long diffTime=punchInTime+nineHrthirtyMin-currentTimeMillis-extraTillNow;
-                        binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(punchInTime+nineHrthirtyMin-extraTillNow))));
-                        startTimer(diffTime);
-                        binding.btnIn.setEnabled(false);
-                        binding.btnOut.setEnabled(true);
-                    }else
-                    {
-                        binding.btnOut.setEnabled(false);
-                        binding.btnIn.setEnabled(true);
-                        binding.tvIn.setText(R.string.txt_success_record_msg);
-                    }
+            checkEmpid(empDatap);
+        }
+
+
+        binding.rgTimeUnit.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                switch (checkedId){
+                    case R.id.rbtnTimeUnithr:
+                        showTimeUnit=HOUR;
+                    break;
+                    case R.id.rbtnTimeUnitmin:
+                        showTimeUnit=MIN;
+                    break;
+                    case R.id.rbtnTimeUnitsec:
+                        showTimeUnit=SEC;
+                    break;
+                    case R.id.rbtnTimeUnitms:
+                        showTimeUnit=MILISEC;
+                    break;
+                    default:
+                        showTimeUnit=MIN;
+                        break;
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                binding.tvIn.setError(getString(R.string.error_tvin));
-                binding.tvIn.setText(R.string.error_tvin);
+                divideBy=getTimeDivider(showTimeUnit);
+                if(empData!=null){
+                    cancelTimer();
+                    checkEmpid(empData.toString());
+                }
             }
-        }
-        }
-
-
+        });
         binding.etId.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -281,8 +293,8 @@ public class PunchInOutFragment extends Fragment {
                     long extraTillnow=empData.optLong(ExtraTillNow,0l);
                     binding.tvIn.setText(getString(R.string.app_tvin,getDateAsString(new Date(punchInTime))
                            ,(extraTillnow*1.0/(60*1000))));
-                    long diffTime=punchInTime+nineHrthirtyMin-currentTimeMillis;
-                    binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(punchInTime+nineHrthirtyMin))));
+                    long diffTime=punchInTime+nineHrthirtyMin-extraTillnow;
+                    binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(diffTime))));
                     startTimer(diffTime);
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -366,17 +378,18 @@ public class PunchInOutFragment extends Fragment {
                 long extraTillNow=root.optLong(ExtraTillNow,0l);
                 String name=root.getString(EName);
                 binding.etName.setText(getString(R.string.app_etname,name));
-                JSONObject todayData=new JSONObject(root.optString(keyTodayDate));
-                if (todayData!=null){
+                binding.etName.setEnabled(false);
+                JSONObject todayData=new JSONObject(root.optString(keyTodayDate,"{}"));
+//                if (todayData!=null){
                     long currentTimeMillis=System.currentTimeMillis();
                     long punchInTime=todayData.optLong(StartTime,currentTimeMillis);
                   //  long punchOutTime=todayData.optLong(EndTime,currentTimeMillis);
                     if(punchInTime!=currentTimeMillis){
                         //set the time
                         binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillNow*1.0/(60*1000))));
-                        long diffTime=punchInTime+nineHrthirtyMin-currentTimeMillis-extraTillNow;
-                        binding.tvOut.setText(getString(R.string.app_tvout, getDateAsString(new Date(punchInTime+nineHrthirtyMin-extraTillNow))));
-                        startTimer(diffTime);
+                        long diffTime=punchInTime+nineHrthirtyMin-extraTillNow;
+                        binding.tvOut.setText(getString(R.string.app_tvout, getDateAsString(new Date(diffTime))));
+                        startTimer(diffTime-System.currentTimeMillis());
                         binding.btnIn.setEnabled(false);
                         binding.btnOut.setEnabled(true);
                     }
@@ -385,22 +398,66 @@ public class PunchInOutFragment extends Fragment {
                         binding.btnIn.setEnabled(true);
                         binding.tvIn.setText(getString(R.string.txt_start_punch_in));
                     }
-                }
-                else
-                {
-                    binding.btnIn.setEnabled(true);
-                    binding.tvIn.setText(getString(R.string.txt_start_punch_in));
-                    Log.i(TAG, "checkEmpid: check why its today is null here data is there");
-                }
+//                }
+//                else
+//                {
+//                    binding.btnIn.setEnabled(true);
+//                    binding.tvIn.setText(getString(R.string.txt_start_punch_in));
+//                    Log.i(TAG, "checkEmpid: check why its today is null here data is there");
+//                }
             } catch (JSONException e) {
                 Log.i(TAG, "checkEmpid: check why its JSONException here data is there");
                 e.printStackTrace();
+                binding.tvIn.setError(getString(R.string.error_tvin));
+                binding.tvIn.setText(R.string.error_tvin);
+                binding.etId.setEnabled(true);
             }
         }else
         {
+            binding.tvIn.setError(getString(R.string.error_tvin));
+            binding.tvIn.setText(R.string.error_tvin);
+            binding.etId.setEnabled(true);
             Log.i(TAG, "checkEmpid: check why its empty here data is there");
         }
 
+    }
+    String getTimeUnit(DisplayTimeIn format){
+        String time;
+        switch (format){
+            case HOUR:
+                time=HOUR.getData();
+                break;
+                case SEC:
+                    time=SEC.getData();
+                break;
+            case MILISEC:
+                time=MILISEC.getData();
+                break;
+            case MIN:
+            default:
+                time=MIN.getData();
+                break;
+        }
+        return time;
+    }
+    long getTimeDivider(DisplayTimeIn format){
+        long time=oneMin;
+        switch (format){
+            case HOUR:
+                time=oneHR;
+                break;
+                case SEC:
+                    time=oneSec;
+                break;
+            case MILISEC:
+                time=oneMiliSec;
+                break;
+            case MIN:
+            default:
+                time=oneMin;
+                break;
+        }
+        return time;
     }
 
     private static final String TAG = "PunchInOutFragment";
@@ -412,13 +469,13 @@ public class PunchInOutFragment extends Fragment {
         try {
             long endTime = System.currentTimeMillis();
             long extraTillNow=empData.optLong(ExtraTillNow,0l);
-            JSONObject todayData = empData.optJSONObject(keyTodayDate);
+            JSONObject todayData = new JSONObject(empData.optString(keyTodayDate));
             long punchInTime = todayData.optLong(StartTime, endTime);
             if (punchInTime == endTime) {
                 binding.tvOut.setText("you forget to punch in");
             } else {
                 String msg = "Today you have ";
-                long diff = punchInTime + nineHrthirtyMin - endTime -extraTillNow;
+                long diff = punchInTime + nineHrthirtyMin - endTime;
                 if (diff == 0) {
                     msg += " completed your 9hr 30min only";
                     extraTillNow=0;
@@ -426,9 +483,10 @@ public class PunchInOutFragment extends Fragment {
                     msg += "not completed your 9hr 30min, less by " + (diff / 1000) + " sec";
                     extraTillNow=-diff;
                 } else {
-                    diff = endTime+extraTillNow - (punchInTime + nineHrthirtyMin);
-                    msg += "completed your 9hr 30min, extra by " + (diff / 1000) + " sec";
-                    extraTillNow=diff;
+                    //diff = endTime- (punchInTime + nineHrthirtyMin);
+                    extraTillNow=-diff;
+                    msg += "completed your 9hr 30min, extra by " + (extraTillNow / 1000) + " sec";
+
                 }
                 binding.tvOut.setText(msg);
 
@@ -439,7 +497,7 @@ public class PunchInOutFragment extends Fragment {
                 empData.put(keyTodayDate, todayData.toString());
 
                 pref.setData(binding.etId.getText().toString(), empData.toString());
-
+                cancelTimer();
             }
         }
         catch (Exception e){
@@ -475,23 +533,23 @@ public class PunchInOutFragment extends Fragment {
         binding.circularDeterminativePb.setMax(100);
         binding.circularDeterminativePb.setProgress(100);
        // cancelTimer();
-        cTimer = new CountDownTimer(remainTime, 60000) {
+        cTimer = new CountDownTimer(remainTime, divideBy) {
             public void onTick(long millisUntilFinished) {
                 int progress=(int) (millisUntilFinished*100/nineHrthirtyMin);
-                int showPer= (int) (millisUntilFinished/oneMin);//binding.circularDeterminativePb.getProgress();
-                Log.i(TAG, "onTick: "+showPer+"min,  "+progress+"% ");
+                double showPer=  (millisUntilFinished*(millisUntilFinished>divideBy?1:1.0)/divideBy);//binding.circularDeterminativePb.getProgress();
+                Log.i(TAG, "onTick: "+showPer+" "+getTimeUnit(showTimeUnit)+",  "+progress+"% ");
               //  if (showPer>progress) {
                     binding.circularDeterminativePb.setProgress(progress);
-                    binding.progressTv.setText(progress+"%\nleft\n"+(millisUntilFinished/oneMin)+" min");
+                    binding.progressTv.setText(progress+"%\nleft\n"+String.format("%.2f",showPer)+"\n"+ getTimeUnit(showTimeUnit));
 
               //  }
 
             }
             public void onFinish() {
                 //send notification for punchout
-                binding.circularDeterminativePb.setMax(100);
-                binding.circularDeterminativePb.setProgress(100);
-                binding.progressTv.setText(100+"%");
+//                binding.circularDeterminativePb.setMax(100);
+                binding.circularDeterminativePb.setProgress(0);
+                binding.progressTv.setText("done");
             }
         };
         cTimer.start();
@@ -499,8 +557,10 @@ public class PunchInOutFragment extends Fragment {
     }
     //cancel timer
     void cancelTimer() {
-        if(cTimer!=null)
+        if(cTimer!=null){
             cTimer.cancel();
+            isTimmerOn=false;
+        }
     }
 
 
@@ -534,11 +594,13 @@ public class PunchInOutFragment extends Fragment {
       //  Date mEndTime = mSimpleDateFormat.parse(endTime);
     }
 
-    long oneSec=  1000;
+    long oneMiliSec= 1;
+    long oneSec=  1000*oneMiliSec;
     long oneMin=  60*oneSec;
     long oneHR=  60*oneMin;
     long nineHrthirtyMin= ((9*oneHR)+ (oneHR/2)); //34200000
     long twoHrthirtyMin= ((2*oneHR)+ (oneHR/2)); //  9000000
+    long divideBy=getTimeDivider(showTimeUnit);
     final String StartTime="StartTime";
     final String EndTime="EndTime";
     final String ExtraTillNow="extraTillnow";
