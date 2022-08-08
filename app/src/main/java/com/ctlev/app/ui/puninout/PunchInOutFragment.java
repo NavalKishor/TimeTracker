@@ -4,7 +4,9 @@ package com.ctlev.app.ui.puninout;
 import static com.ctlev.app.ui.puninout.PunchInOutFragment.DisplayTimeIn.*;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
 import android.app.PendingIntent;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -15,7 +17,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.DatePicker;
 import android.widget.RadioGroup;
+import android.widget.TimePicker;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -176,6 +180,12 @@ public class PunchInOutFragment extends Fragment {
             binding.etId.setEnabled(false);
             checkEmpid(empDatap);
         }
+        binding.tvIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getUserSelectedDateFromCal();
+            }
+        });
 
 
         binding.rgTimeUnit.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
@@ -292,7 +302,7 @@ public class PunchInOutFragment extends Fragment {
                     long punchInTime=currentTimeMillis;
                     long extraTillnow=empData.optLong(ExtraTillNow,0l);
                     binding.tvIn.setText(getString(R.string.app_tvin,getDateAsString(new Date(punchInTime))
-                           ,(extraTillnow*1.0/(60*1000))));
+                           ,(extraTillnow*1.0/(divideBy)),getTimeUnit(showTimeUnit)));
                     long diffTime=punchInTime+nineHrthirtyMin-extraTillnow;
                     binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(diffTime))));
                     startTimer(diffTime);
@@ -326,7 +336,7 @@ public class PunchInOutFragment extends Fragment {
             long punchInTime=currentTimeMillis;
             long extraTillnow=pref.getData(ExtraTillNow,0);
 //            binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)))+" ,\nSo far extra time you have covered is "+(extraTillnow*1.0/(60*1000))+" min");
-            binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillnow*1.0/(60*1000))) );
+            binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillnow*1.0/(divideBy)),getTimeUnit(showTimeUnit)) );
             long diffTime=punchInTime+nineHrthirtyMin-currentTimeMillis;
             binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(punchInTime+nineHrthirtyMin))));
             startTimer(diffTime);
@@ -386,7 +396,7 @@ public class PunchInOutFragment extends Fragment {
                   //  long punchOutTime=todayData.optLong(EndTime,currentTimeMillis);
                     if(punchInTime!=currentTimeMillis){
                         //set the time
-                        binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillNow*1.0/(60*1000))));
+                        binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillNow*1.0/(divideBy)),getTimeUnit(showTimeUnit)));
                         long diffTime=punchInTime+nineHrthirtyMin-extraTillNow;
                         binding.tvOut.setText(getString(R.string.app_tvout, getDateAsString(new Date(diffTime))));
                         startTimer(diffTime-System.currentTimeMillis());
@@ -480,12 +490,12 @@ public class PunchInOutFragment extends Fragment {
                     msg += " completed your 9hr 30min only";
                     extraTillNow=0;
                 } else if (diff > 0) {
-                    msg += "not completed your 9hr 30min, less by " + (diff / 1000) + " sec";
+                    msg += "not completed your 9hr 30min, less by " + (diff / divideBy) + " "+getTimeUnit(showTimeUnit);
                     extraTillNow=-diff;
                 } else {
-                    //diff = endTime- (punchInTime + nineHrthirtyMin);
-                    extraTillNow=-diff;
-                    msg += "completed your 9hr 30min, extra by " + (extraTillNow / 1000) + " sec";
+                    //diff = endTime- (punchInTime + nineHrthirtyMin); -1(-diff)=+diff
+                    extraTillNow=-1*(diff);
+                    msg += "completed your 9hr 30min, extra by " + (extraTillNow / divideBy) + " "+getTimeUnit(showTimeUnit);
 
                 }
                 binding.tvOut.setText(msg);
@@ -607,13 +617,84 @@ public class PunchInOutFragment extends Fragment {
     final String DiffOfDay="diffOfDay";
     final String EName="ename";
     final String LastEId="lasteid";
+    DatePickerDialog startTime;
+    TimePickerDialog pickTime;
+
+    private void getSelectedTimeInmilis() {
+        Calendar currentDate = Calendar.getInstance();
+//        Calendar date = Calendar.getInstance();
+        if (pickTime == null){
+            pickTime = new TimePickerDialog(this.getContext(), new TimePickerDialog.OnTimeSetListener() {
+                @Override
+                public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                    String id =binding.etId.getText().toString();
+                    if(id==null||id.isEmpty()) return;
+                    Calendar date = Calendar.getInstance();
+                    date.setTime(userSeleted);
+                    date.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    date.set(Calendar.MINUTE, minute);
+
+                    keyTodayDate=getDateAsString(date.getTime(),null);
+                    long currentTimeMillis=date.getTime().getTime();
+                    Log.i(TAG, "onTimeSet: selected date time :"+date.toString()+",keyTodayDate:"+keyTodayDate+",currentTimeMillis:"+currentTimeMillis);
+                    JSONObject todayData= empData.optJSONObject(keyTodayDate);
+                    if(todayData==null) todayData=new JSONObject();
+
+                    try {
+                        todayData.put(StartTime,currentTimeMillis);
+                        empData.put(keyTodayDate,todayData.toString());
+                        pref.setData(id,empData.toString());
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    date.setTimeInMillis(System.currentTimeMillis());
+                    Log.v(TAG, "Reset calender " + date.getTime());
+                }
+            }, currentDate.get(Calendar.HOUR_OF_DAY),
+                    currentDate.get(Calendar.MINUTE),
+                    false);
+        }
+        if(!pickTime.isShowing())
+            pickTime.show();
+
+    }
+    Date userSeleted;
+    private void getUserSelectedDateFromCal(){
+//        show calender to user
+        if(startTime==null) {
+            Calendar newCalendar = Calendar.getInstance();
+            startTime = new DatePickerDialog(this.getContext(),
+                    new DatePickerDialog.OnDateSetListener() {
+                        @Override
+                        public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+
+                            Calendar newDate = Calendar.getInstance();
+                            newDate.set(year, monthOfYear, dayOfMonth);
+                            userSeleted=newDate.getTime();
+                            keyTodayDate=getDateAsString(newDate.getTime(),null);
+                            newDate.setTimeInMillis(System.currentTimeMillis());
+                            getSelectedTimeInmilis();
+                        }
+
+                    },
+                    newCalendar.get(Calendar.YEAR),
+                    newCalendar.get(Calendar.MONTH),
+                    newCalendar.get(Calendar.DAY_OF_MONTH));
+
+        }
+        if(!startTime.isShowing())
+            startTime.show();
+
+    }
     public void AddCalendarEvent() {
         Calendar calendarEvent = Calendar.getInstance();
-        Intent i = new Intent(Intent.ACTION_INSERT_OR_EDIT);
+        Intent i = new Intent(Intent.ACTION_EDIT);
         i.setType("vnd.android.cursor.item/event");
         i.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, pref.getData(StartTime,System.currentTimeMillis()));
         i.putExtra(CalendarContract.Events.DESCRIPTION, "Working hour to remind");
-//        i.putExtra("allDay", true);
+        i.putExtra("time", true);
+        //        i.putExtra("allDay", true);
 //        i.putExtra("rule", "FREQ=YEARLY");
         i.putExtra(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
 //        i.putExtra("rule", "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
