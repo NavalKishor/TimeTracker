@@ -2,10 +2,36 @@ plugins {
     id 'com.android.application'
 }
 
+def getSecretKeys(){
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+
+// Initialize a new Properties() object called keystoreProperties.
+    def keystoreProperties = new Properties()
+
+// Load your keystore.properties file into the keystoreProperties object.
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    return keystoreProperties
+}
+
+def keystoreProperties= getSecretKeys()
+
 android {
     compileSdkVersion 32
     buildToolsVersion "32.0.0"
-
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['rkeyAlias']
+            keyPassword keystoreProperties['rkeyPassword']
+            storePassword keystoreProperties['rstorePassword']
+            storeFile file(keystoreProperties['rstoreFile'])
+        }
+        debug {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storePassword keystoreProperties['storePassword']
+            storeFile file(keystoreProperties['storeFile'])
+        }
+    }
     defaultConfig {
         applicationId "com.ctlev.app"
         minSdkVersion 24
@@ -26,6 +52,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            buildConfigField "boolean", "EnableLog", "false"
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            buildConfigField "boolean", "EnableLog", "true"
         }
     }
     buildFeatures {
@@ -52,6 +84,7 @@ dependencies {
     implementation 'androidx.security:security-crypto:1.0.0'
     implementation 'com.google.android.gms:play-services-location:18.0.0'
     implementation 'com.google.android.gms:play-services-maps:18.0.2'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
 
     annotationProcessor "androidx.room:room-runtime:2.4.2"
     annotationProcessor "androidx.room:room-compiler:2.4.2"

@@ -63,6 +63,7 @@ public class PunchInOutFragment extends Fragment {
     CountDownTimer cTimer = null;
     JSONObject empData;
     DisplayTimeIn showTimeUnit=MIN;
+    int clickedId=-1;
 
     enum DisplayTimeIn{
         HOUR("hr"),MIN("min"),SEC("sec"),MILISEC("ms");
@@ -169,6 +170,24 @@ public class PunchInOutFragment extends Fragment {
         binding.btnIn.setEnabled(false);
         binding.btnOut.setEnabled(false);
         binding.etId.setEnabled(true);
+        binding.etId.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                binding.etId.setEnabled(true);
+                binding.etName.setEnabled(true);
+                return false;
+            }
+        });
+        binding.circularDeterminativePb.setOnClickListener(new View.OnClickListener() {
+            @Override
+             public void onClick(View view) {
+                String empid=binding.etId.getText().toString();
+                if(empid==null || empid.isEmpty()) return;
+                getActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, WeeklyTrackerFragment.newInstance(empid))
+                        .commitNow();
+             }
+        });
 
 
         String empid=pref.getData(LastEId,"");
@@ -183,6 +202,14 @@ public class PunchInOutFragment extends Fragment {
         binding.tvIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                clickedId=v.getId();
+                getUserSelectedDateFromCal();
+            }
+        });
+        binding.tvOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clickedId=v.getId();
                 getUserSelectedDateFromCal();
             }
         });
@@ -302,10 +329,10 @@ public class PunchInOutFragment extends Fragment {
                     long punchInTime=currentTimeMillis;
                     long extraTillnow=empData.optLong(ExtraTillNow,0l);
                     binding.tvIn.setText(getString(R.string.app_tvin,getDateAsString(new Date(punchInTime))
-                           ,(extraTillnow*1.0/(divideBy)),getTimeUnit(showTimeUnit)));
+                           ,(extraTillnow*1.0f/(divideBy)),getTimeUnit(showTimeUnit)));
                     long diffTime=punchInTime+nineHrthirtyMin-extraTillnow;
                     binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(diffTime))));
-                    startTimer(diffTime);
+                    startTimer(diffTime-System.currentTimeMillis());
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -319,9 +346,63 @@ public class PunchInOutFragment extends Fragment {
             public void onClick(View view) {
                 //binding.btnOut.setEnabled(false);
                 binding.btnIn.setEnabled(false);
-                outClicked();
+                outClicked(System.currentTimeMillis());
             }
         });
+        binding.btnOut.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+               String empid= pref.getData(LastEId,"");
+               if(empid.isEmpty()||true)
+                empid= binding.etId.getText().toString();
+                if(empid.isEmpty()) return;
+                String empDatap=pref.getData(empid,"");
+                if (empDatap.isEmpty() || !empDatap.startsWith("{")|| !empDatap.endsWith("}")) return;
+                try {
+                    JSONObject root=new JSONObject(empDatap);
+                    //current month
+                    Calendar calmonth=Calendar.getInstance();
+                    //get past month
+                    calmonth.add(Calendar.MONTH, -1);//
+
+                    int min = calmonth.getActualMinimum(Calendar.DAY_OF_MONTH);
+                    calmonth.set(Calendar.DAY_OF_MONTH, min);  //previous Month first day
+                    Date preMonFirtDate=calmonth.getTime();
+
+                    int dayMax = calmonth.getActualMaximum(Calendar.DAY_OF_MONTH);
+                    calmonth.set(Calendar.DAY_OF_MONTH, dayMax);//previousMonlast day
+                    Date preMonLastDate=calmonth.getTime();
+
+
+                    //ArrayList<Date> dates=new ArrayList<>();
+                    Calendar cal1 = Calendar.getInstance();
+                    cal1.setTime(preMonFirtDate);
+
+
+                    Calendar cal2 = Calendar.getInstance();
+                    cal2.setTime(preMonLastDate);
+
+                    while(!cal1.after(cal2))
+                    {
+                       int day = cal1.get(Calendar.DAY_OF_MONTH);
+                        String keyTodayDate= Constants.getDateAsString(cal1.getTime(),null);
+                        Log.i(TAG, "run: keyTodayDate:"+keyTodayDate+",root.has:"+root.has(keyTodayDate));
+                        if (root.has(keyTodayDate)) {
+                            root.remove(keyTodayDate);
+                        }
+                       boolean isLastDayOfMonth=day==dayMax;
+                       //dates.add(cal1.getTime());
+                       cal1.add(Calendar.DATE, 1);
+                       if(isLastDayOfMonth ) break;
+                    }
+                    pref.setData(empid,root.toString());
+
+                }
+                catch (Exception e){
+
+                }
+            }
+        },10);
     }
 
     public String getNameRemoveGreet(String etData){
@@ -339,7 +420,7 @@ public class PunchInOutFragment extends Fragment {
             binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillnow*1.0/(divideBy)),getTimeUnit(showTimeUnit)) );
             long diffTime=punchInTime+nineHrthirtyMin-currentTimeMillis;
             binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(punchInTime+nineHrthirtyMin))));
-            startTimer(diffTime);
+            startTimer(diffTime-System.currentTimeMillis());
         }
     }
     public long restExtraTime(long extra){
@@ -475,9 +556,9 @@ public class PunchInOutFragment extends Fragment {
         AddCalendarEvent();
        // startRecord();
     }
-    public void outClicked(){
+    public void outClicked(long endTime){
         try {
-            long endTime = System.currentTimeMillis();
+            //long endTime = System.currentTimeMillis();
             long extraTillNow=empData.optLong(ExtraTillNow,0l);
             JSONObject todayData = new JSONObject(empData.optString(keyTodayDate));
             long punchInTime = todayData.optLong(StartTime, endTime);
@@ -490,14 +571,15 @@ public class PunchInOutFragment extends Fragment {
                     msg += " completed your 9hr 30min only";
                     extraTillNow=0;
                 } else if (diff > 0) {
-                    msg += "not completed your 9hr 30min, less by " + (diff / divideBy) + " "+getTimeUnit(showTimeUnit);
+                    msg += "not completed your 9hr 30min, less by " + String.format("%.2f",(diff *1.0/ divideBy)) + " "+getTimeUnit(showTimeUnit);
                     extraTillNow=-diff;
                 } else {
                     //diff = endTime- (punchInTime + nineHrthirtyMin); -1(-diff)=+diff
                     extraTillNow=-1*(diff);
-                    msg += "completed your 9hr 30min, extra by " + (extraTillNow / divideBy) + " "+getTimeUnit(showTimeUnit);
+                    msg += "completed your 9hr 30min, extra by " + String.format ("%.2f",(extraTillNow *1.0/ divideBy)) + " "+getTimeUnit(showTimeUnit);
 
                 }
+
                 binding.tvOut.setText(msg);
 
                 todayData.put(EndTime, endTime);
@@ -615,7 +697,7 @@ public class PunchInOutFragment extends Fragment {
     final String EndTime="EndTime";
     final String ExtraTillNow="extraTillnow";
     final String DiffOfDay="diffOfDay";
-    final String EName="ename";
+    final  String EName="ename";
     final String LastEId="lasteid";
     DatePickerDialog startTime;
     TimePickerDialog pickTime;
@@ -637,13 +719,34 @@ public class PunchInOutFragment extends Fragment {
                     keyTodayDate=getDateAsString(date.getTime(),null);
                     long currentTimeMillis=date.getTime().getTime();
                     Log.i(TAG, "onTimeSet: selected date time :"+date.toString()+",keyTodayDate:"+keyTodayDate+",currentTimeMillis:"+currentTimeMillis);
-                    JSONObject todayData= empData.optJSONObject(keyTodayDate);
-                    if(todayData==null) todayData=new JSONObject();
+
+
 
                     try {
-                        todayData.put(StartTime,currentTimeMillis);
-                        empData.put(keyTodayDate,todayData.toString());
-                        pref.setData(id,empData.toString());
+                        JSONObject todayData;
+                        String s = empData.optString(keyTodayDate);
+                        if(s!=null&&s.isEmpty()&&s.startsWith("{")&&s.endsWith("}"))
+                             todayData = new JSONObject(s);
+                        else{
+                            todayData = new JSONObject();
+                        }
+
+                        if(clickedId==R.id.tvIn){
+                            //in
+                            todayData.put(StartTime,currentTimeMillis);
+                            empData.put(keyTodayDate,todayData.toString());
+                            pref.setData(id,empData.toString());
+                        } if(clickedId==R.id.tvOut){
+                            //out
+                            todayData.put(EndTime,currentTimeMillis);
+                            outClicked(currentTimeMillis);
+                        }
+                        else
+                        {
+                          //other cases
+                        }
+
+
 
                     } catch (JSONException e) {
                         e.printStackTrace();
