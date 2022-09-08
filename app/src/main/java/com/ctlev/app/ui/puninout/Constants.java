@@ -34,7 +34,7 @@ public class Constants {
         long min= (diffTime/Constants.oneMin)-hr*60;
         long sec= ((diffTime-hr*Constants.oneHR -min*Constants.oneMin)/Constants.oneSec);
         long ms= (diffTime-hr*Constants.oneHR -min*Constants.oneMin-sec*Constants.oneSec)/Constants.oneMiliSec;
-        String diffTimes=hr+" hr, "+min+" min, "+sec+" sec, "+ms+" ms \n Extra:"+(String.format("%.2f",(diffTime-Constants.nineHrthirtyMin)*1.0f/Constants.oneHR))+" hr";
+        String diffTimes=hr+" hr, "+min+" min, "+sec+" sec, "+ms+" ms \nExtra:"+(String.format("%.2f",(diffTime-Constants.nineHrthirtyMin)*1.0f/Constants.oneHR))+" hr";
         return diffTimes;
     }
 }

@@ -801,9 +801,12 @@ public class PunchInOutFragment extends Fragment {
         //        i.putExtra("allDay", true);
 //        i.putExtra("rule", "FREQ=YEARLY");
 //        i.putExtra(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
-        i.putExtra(CalendarContract.Events.RRULE, "FREQ=HOURLY;INTERVAL=9;COUNT=1");
+//        //Every 20 minutes from 8:00 AM to 8:40 AM and from 5:00 PM to 5:40 PM every day:
+//        i.putExtra(CalendarContract.Events.RRULE, "FREQ=DAILY;BYHOUR=8,17;BYMINUTE=0,20,40");
+        // Every 9 hours from 9:00 AM to 5:00 PM on a specific day:
+         i.putExtra(CalendarContract.Events.RRULE, "FREQ=HOURLY;INTERVAL=9;COUNT=1");
 //        i.putExtra("rule", "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
-        i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, pref.getData(EndTime,System.currentTimeMillis()+nineHrthirtyMin)   );
+        i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, pref.getData(EndTime,System.currentTimeMillis()+nineHrthirtyMin));
         i.putExtra(CalendarContract.Events.TITLE, "Punch In and Out");
         i.putExtra(CalendarContract.Events.EVENT_LOCATION, "WFH or WFO");
         try {
