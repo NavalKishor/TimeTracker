@@ -403,6 +403,7 @@ public class PunchInOutFragment extends Fragment {
                 }
             }
         },10);
+     //   AddCalendarEvent();//only for test
     }
 
     public String getNameRemoveGreet(String etData){
@@ -799,7 +800,8 @@ public class PunchInOutFragment extends Fragment {
         i.putExtra("time", true);
         //        i.putExtra("allDay", true);
 //        i.putExtra("rule", "FREQ=YEARLY");
-        i.putExtra(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
+//        i.putExtra(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
+        i.putExtra(CalendarContract.Events.RRULE, "FREQ=HOURLY;INTERVAL=9;COUNT=1");
 //        i.putExtra("rule", "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
         i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, pref.getData(EndTime,System.currentTimeMillis()+nineHrthirtyMin)   );
         i.putExtra(CalendarContract.Events.TITLE, "Punch In and Out");
