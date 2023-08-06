@@ -23,7 +23,6 @@ import com.ctlev.app.ui.puninout.placeholder.PlaceholderContent;
 
 import org.json.JSONObject;
 
-import java.util.Calendar;
 
 /**
  * A fragment representing a list of Items.
@@ -93,6 +92,18 @@ public class WeeklyTrackerFragment extends Fragment {
        }
         Context context = binding.weeklyList.getContext();
         LinearLayoutManager  layoutManager=new LinearLayoutManager(context);
+        binding.previousMonth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getMonthlyData(-1);
+            }
+        });
+        binding.currentMonth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getMonthlyData(0);
+            }
+        });
         binding.weeklyList.setLayoutManager(layoutManager);
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(context, layoutManager.getOrientation());
         binding.weeklyList.addItemDecoration(dividerItemDecoration);
@@ -100,6 +111,14 @@ public class WeeklyTrackerFragment extends Fragment {
         binding.weeklyList.setAdapter(new WeeklyTrackerRecyclerViewAdapter(placeholderContent.ITEMS));
 
 
+    }
+
+    void getMonthlyData(int month){
+        placeholderContent.ITEMS.clear();
+        binding.weeklyList.getAdapter().notifyDataSetChanged();
+        String empData=pref.getData(empId,"");
+        placeholderContent.parseJsonMonthlyData(empData,month);
+        binding.weeklyList.getAdapter().notifyDataSetChanged();
     }
 
 

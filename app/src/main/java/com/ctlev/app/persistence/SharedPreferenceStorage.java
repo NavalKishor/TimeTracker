@@ -25,8 +25,13 @@ public class SharedPreferenceStorage {
 
     public static SharedPreferenceStorage getSharedPreferences(Context context) {
         return SharedPreferenceStorageHelper.sharedPreferenceStorage
-                .initEncryptedSharedPreferences(context);
+                .initSharedPreferences(context);
+    }
 
+    private SharedPreferenceStorage initSharedPreferences(Context context) {
+        sharedPreferences=context.getSharedPreferences(preferenceName,Context.MODE_PRIVATE);
+        editor = sharedPreferences.edit();
+        return this;
     }
 
     private SharedPreferenceStorage initEncryptedSharedPreferences(Context context) {

@@ -102,7 +102,7 @@ public class PunchInOutFragment extends Fragment {
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when
         // calling addGeofences() and removeGeofences().
         geofencePendingIntent = PendingIntent.getBroadcast(this.getContext(), 0, intent, PendingIntent.
-                FLAG_UPDATE_CURRENT);
+                FLAG_MUTABLE);
         return geofencePendingIntent;
     }
 
@@ -328,8 +328,11 @@ public class PunchInOutFragment extends Fragment {
                     //save the data
                     long punchInTime=currentTimeMillis;
                     long extraTillnow=empData.optLong(ExtraTillNow,0l);
+
                     binding.tvIn.setText(getString(R.string.app_tvin,getDateAsString(new Date(punchInTime))
                            ,(extraTillnow*1.0f/(divideBy)),getTimeUnit(showTimeUnit)));
+                    if(extraTillnow>threeHrthirtyMin)
+                        extraTillnow=threeHrthirtyMin;
                     long diffTime=punchInTime+nineHrthirtyMin-extraTillnow;
                     binding.tvOut.setText(getString(R.string.app_tvout,getDateAsString(new Date(diffTime))));
                     startTimer(diffTime-System.currentTimeMillis());
@@ -349,6 +352,7 @@ public class PunchInOutFragment extends Fragment {
                 outClicked(System.currentTimeMillis());
             }
         });
+        //deleting the record of previous month
         binding.btnOut.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -363,7 +367,7 @@ public class PunchInOutFragment extends Fragment {
                     //current month
                     Calendar calmonth=Calendar.getInstance();
                     //get past month
-                    calmonth.add(Calendar.MONTH, -1);//
+                    calmonth.add(Calendar.MONTH, -2);//
 
                     int min = calmonth.getActualMinimum(Calendar.DAY_OF_MONTH);
                     calmonth.set(Calendar.DAY_OF_MONTH, min);  //previous Month first day
@@ -451,8 +455,8 @@ public class PunchInOutFragment extends Fragment {
         boolean isFirstDayOfMonth=day==dayMin;
         boolean isLastDayOfWeek=day==day7;
         boolean isFirstDayOfWeek=day==day1;
-        if (extra>twoHrthirtyMin){
-            extra=twoHrthirtyMin;
+        if (extra>sevenHrthirtyMin){
+            extra=sevenHrthirtyMin;
         }
         //if(isFirstDayOfWeek||isLastDayOfWeek||isFirstDayOfMonth || isLastDayOfMonth ){
         if(isLastDayOfWeek|| isLastDayOfMonth ){
@@ -479,6 +483,8 @@ public class PunchInOutFragment extends Fragment {
                     if(punchInTime!=currentTimeMillis){
                         //set the time
                         binding.tvIn.setText(getString(R.string.app_tvin, getDateAsString(new Date(punchInTime)),(extraTillNow*1.0/(divideBy)),getTimeUnit(showTimeUnit)));
+                        if(extraTillNow>threeHrthirtyMin)
+                            extraTillNow=threeHrthirtyMin;
                         long diffTime=punchInTime+nineHrthirtyMin-extraTillNow;
                         binding.tvOut.setText(getString(R.string.app_tvout, getDateAsString(new Date(diffTime))));
                         startTimer(diffTime-System.currentTimeMillis());
@@ -573,6 +579,9 @@ public class PunchInOutFragment extends Fragment {
                     extraTillNow=0;
                 } else if (diff > 0) {
                     msg += "not completed your 9hr 30min, less by " + String.format("%.2f",(diff *1.0/ divideBy)) + " "+getTimeUnit(showTimeUnit);
+                   if(diff<fourHrfortyFive||diff<sixHr)
+                       extraTillNow=0;
+                    else
                     extraTillNow=-diff;
                 } else {
                     //diff = endTime- (punchInTime + nineHrthirtyMin); -1(-diff)=+diff
@@ -585,6 +594,11 @@ public class PunchInOutFragment extends Fragment {
 
                 todayData.put(EndTime, endTime);
                 todayData.put(DiffOfDay, diff);
+
+                if(extraTillNow>twoHrthirtyMin)extraTillNow=twoHrthirtyMin;
+
+                // add all previous diff
+                extraTillNow=calculateExtra();
                 extraTillNow=restExtraTime(extraTillNow);
                 empData.put(ExtraTillNow, extraTillNow);
                 empData.put(keyTodayDate, todayData.toString());
@@ -596,6 +610,82 @@ public class PunchInOutFragment extends Fragment {
         catch (Exception e){
            e.printStackTrace();
         }
+    }
+
+    private long calculateExtra(){
+        long extra=0l;
+        try {
+            ArrayList<Date> dates = getDateBeginWeek();
+            JSONObject EmpTimeRecord = new JSONObject(empData.toString());
+            for (Date date : dates) {
+                String keyTodayDate = Constants.getDateAsString(date, null);
+                JSONObject todayData = new JSONObject(EmpTimeRecord.optString(keyTodayDate, "{}"));
+                if (todayData == null || todayData.length() == 0) continue;
+                long startTime = todayData.optLong(Constants.StartTime, System.currentTimeMillis());
+                long endTime = todayData.optLong(Constants.EndTime, System.currentTimeMillis());
+                long diffTimeExtra = todayData.optLong(Constants.DiffOfDay, 0l);
+                long diffTime = endTime - startTime;
+                if(diffTime<fourHrfortyFive||diffTime<sixHr)
+                    diffTime=0;
+                if(diffTime>twoHrthirtyMin)diffTime=twoHrthirtyMin;
+                extra+=diffTime;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return extra;
+    }
+
+    public ArrayList<Date> getDateBeginWeek(){
+        Calendar c1 = Calendar.getInstance();
+        int year = c1.get(Calendar.YEAR);
+        int month = c1.get(Calendar.MONTH)+1;
+        int day = c1.get(Calendar.DAY_OF_MONTH);
+        int dayMax=c1.getActualMaximum(Calendar.DAY_OF_MONTH); //last day of month
+        int dayMin=c1.getActualMinimum(Calendar.DAY_OF_MONTH); //first day of month
+        System.out.println("date begin of week = " +day+"-"+month+"-"+year);
+        //first day of week is sunday that is 1 but i want as Monday so 2
+        c1.set(Calendar.DAY_OF_WEEK, 2); //monday
+
+        int year1 = c1.get(Calendar.YEAR);
+        int month1 = c1.get(Calendar.MONTH)+1;
+        int day1 = c1.get(Calendar.DAY_OF_MONTH);
+        System.out.println("date begin of week = " +day1+"-"+month1+"-"+year1);
+
+        Date date1= c1.getTime();
+        //last day of week is saturday that is 7 but i want as Friday so 6
+        c1.set(Calendar.DAY_OF_WEEK, 6); //friday
+
+        int year7 = c1.get(Calendar.YEAR);
+        int month7 = c1.get(Calendar.MONTH)+1;
+        int day7 = c1.get(Calendar.DAY_OF_MONTH);
+        System.out.println("date end of week = " +day7+"-"+month7+"-"+year7);
+        Date date2=c1.getTime();
+        //-------
+        boolean isLastDayOfMonth=day==dayMax;
+
+        boolean isLastDayOfWeek=day==day7;
+
+
+        ArrayList<Date> dates=new ArrayList<>();
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(date1);
+
+
+        Calendar cal2 = Calendar.getInstance();
+        cal2.setTime(date2);
+
+        while(!cal1.after(cal2))
+        {
+            day = cal1.get(Calendar.DAY_OF_MONTH);
+            isLastDayOfMonth=day==dayMax;
+            isLastDayOfWeek=day==day7;
+            dates.add(cal1.getTime());
+            cal1.add(Calendar.DATE, 1);
+            if(isLastDayOfMonth || isLastDayOfWeek) break;
+
+        }
+        return dates;
     }
 
     @Override
@@ -693,6 +783,10 @@ public class PunchInOutFragment extends Fragment {
     long oneHR=  60*oneMin;
     long nineHrthirtyMin= ((9*oneHR)+ (oneHR/2)); //34200000
     long twoHrthirtyMin= ((2*oneHR)+ (oneHR/2)); //  9000000
+    long threeHrthirtyMin= ((3*oneHR)+ (oneHR/2)); //
+    long sixHr= (6*oneHR); //  25200000
+    long fourHrfortyFive=( (4*oneHR)+ (oneHR/2)+(15*oneMin)); //  25200000
+    long sevenHrthirtyMin= ((7*oneHR)+ (oneHR/2)); //  25200000
     long divideBy=getTimeDivider(showTimeUnit);
     final String StartTime="StartTime";
     final String EndTime="EndTime";
