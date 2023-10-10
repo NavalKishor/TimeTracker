@@ -450,10 +450,15 @@ public class PunchInOutFragment extends Fragment {
         int month7 = c1.get(Calendar.MONTH)+1;
         int day7 = c1.get(Calendar.DAY_OF_MONTH);
         System.out.println("date end of week = " +day7+"-"+month7+"-"+year7);
+        c1.set(Calendar.DAY_OF_WEEK, 7); //saturday
+        int day6 = c1.get(Calendar.DAY_OF_MONTH);
+        System.out.println("date end of week = " +day6+"-"+month7+"-"+year7);
+
+
         // reset logic
         boolean isLastDayOfMonth=day==dayMax;
         boolean isFirstDayOfMonth=day==dayMin;
-        boolean isLastDayOfWeek=day==day7;
+        boolean isLastDayOfWeek=day==day7 || day==day6; //even on saturday it will reset now
         boolean isFirstDayOfWeek=day==day1;
         if (extra>sevenHrthirtyMin){
             extra=sevenHrthirtyMin;
