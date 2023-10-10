@@ -62,7 +62,7 @@ public class PlaceholderContent {
                 long startTime=todayData.optLong(Constants.StartTime, System.currentTimeMillis());
                 long endTime=todayData.optLong(Constants.EndTime, System.currentTimeMillis());
                 long diffTimeExtra=todayData.optLong(Constants.DiffOfDay, 0l);
-                long  diffTime=endTime-startTime;
+                long  diffTime=endTime-startTime;//check if ninehr30min needed
                /* long hr= (diffTime/Constants.oneHR);
                 long min= (diffTime/Constants.oneMin)-hr*60;
                 long sec= ((diffTime-hr*Constants.oneHR -min*Constants.oneMin)/Constants.oneSec);
@@ -70,7 +70,7 @@ public class PlaceholderContent {
                 String diffTimes=hr+" hr, "+min+" min, "+sec+" sec, "+ms+" ms \n Extra:"+(String.format("%.2f",(diffTime-Constants.nineHrthirtyMin)*1.0f/Constants.oneHR))+" hr";
                 */
                 String diffTimes = Constants.convertTimeDifferenceToString(diffTime);
-                String dateFormat="dd-MM-yyyy HH:mm:ss";
+                String dateFormat="dd-MM-yyyy HH:mm:ss (E)";
                 try {
                     ITEMS.add(new PlaceholderItem(Constants.getDateAsString(new Date(startTime),dateFormat),Constants.getDateAsString(new Date(endTime),dateFormat),diffTimes));
                 } catch (Exception e) {
@@ -153,10 +153,15 @@ public class PlaceholderContent {
         int day7 = c1.get(Calendar.DAY_OF_MONTH);
         System.out.println("date end of week = " +day7+"-"+month7+"-"+year7);
         Date date2=c1.getTime();
+
+        c1.set(Calendar.DAY_OF_WEEK, 7); //saturday
+        int day6 = c1.get(Calendar.DAY_OF_MONTH);
+        System.out.println("date end of week = " +day6+"-"+month7+"-"+year7);
+        Date date3=c1.getTime();
         //-------
         boolean isLastDayOfMonth=day==dayMax;
 
-        boolean isLastDayOfWeek=day==day7;
+        boolean isLastDayOfWeek=day==day7|| day==day6;
 
 
         ArrayList<Date> dates=new ArrayList<>();
@@ -171,7 +176,7 @@ public class PlaceholderContent {
         {
             day = cal1.get(Calendar.DAY_OF_MONTH);
             isLastDayOfMonth=day==dayMax;
-            isLastDayOfWeek=day==day7;
+            isLastDayOfWeek=/*day==day7||*/ day==day6;
             dates.add(cal1.getTime());
             cal1.add(Calendar.DATE, 1);
             if(isLastDayOfMonth || isLastDayOfWeek) break;

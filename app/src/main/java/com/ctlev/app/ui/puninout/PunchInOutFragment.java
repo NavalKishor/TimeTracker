@@ -403,7 +403,7 @@ public class PunchInOutFragment extends Fragment {
 
                 }
                 catch (Exception e){
-
+                    Log.i(TAG, "run: ex while delete the record of time tracker");
                 }
             }
         },10);
@@ -624,7 +624,7 @@ public class PunchInOutFragment extends Fragment {
                 long startTime = todayData.optLong(Constants.StartTime, System.currentTimeMillis());
                 long endTime = todayData.optLong(Constants.EndTime, System.currentTimeMillis());
                 long diffTimeExtra = todayData.optLong(Constants.DiffOfDay, 0l);
-                long diffTime = endTime - startTime;
+                long diffTime = endTime - (startTime+nineHrthirtyMin);
                 if(diffTime<fourHrfortyFive||diffTime<sixHr)
                     diffTime=0;
                 if(diffTime>twoHrthirtyMin)diffTime=twoHrthirtyMin;
@@ -636,6 +636,7 @@ public class PunchInOutFragment extends Fragment {
         return extra;
     }
 
+    /* do similar change in the getDateBeginWeek class or make it common by utils class or singleton */
     public ArrayList<Date> getDateBeginWeek(){
         Calendar c1 = Calendar.getInstance();
         int year = c1.get(Calendar.YEAR);
@@ -661,10 +662,15 @@ public class PunchInOutFragment extends Fragment {
         int day7 = c1.get(Calendar.DAY_OF_MONTH);
         System.out.println("date end of week = " +day7+"-"+month7+"-"+year7);
         Date date2=c1.getTime();
+
+        c1.set(Calendar.DAY_OF_WEEK, 7); //saturday
+        int day6 = c1.get(Calendar.DAY_OF_MONTH);
+        System.out.println("date end of week = " +day6+"-"+month7+"-"+year7);
+        Date date3=c1.getTime();
         //-------
         boolean isLastDayOfMonth=day==dayMax;
 
-        boolean isLastDayOfWeek=day==day7;
+        boolean isLastDayOfWeek=day==day7 || day==day6;
 
 
         ArrayList<Date> dates=new ArrayList<>();
@@ -673,13 +679,13 @@ public class PunchInOutFragment extends Fragment {
 
 
         Calendar cal2 = Calendar.getInstance();
-        cal2.setTime(date2);
+        cal2.setTime(date3);
 
         while(!cal1.after(cal2))
         {
             day = cal1.get(Calendar.DAY_OF_MONTH);
             isLastDayOfMonth=day==dayMax;
-            isLastDayOfWeek=day==day7;
+            isLastDayOfWeek=/*day==day7 ||*/ day==day6;
             dates.add(cal1.getTime());
             cal1.add(Calendar.DATE, 1);
             if(isLastDayOfMonth || isLastDayOfWeek) break;
@@ -897,8 +903,8 @@ public class PunchInOutFragment extends Fragment {
 //        i.putExtra(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
 //        //Every 20 minutes from 8:00 AM to 8:40 AM and from 5:00 PM to 5:40 PM every day:
 //        i.putExtra(CalendarContract.Events.RRULE, "FREQ=DAILY;BYHOUR=8,17;BYMINUTE=0,20,40");
-        // Every 9 hours from 9:00 AM to 5:00 PM on a specific day:
-         i.putExtra(CalendarContract.Events.RRULE, "FREQ=HOURLY;INTERVAL=9;COUNT=1");
+        // Every 9 hours from 9:00 AM to 5:00 PM on a specific day: FREQ=HOURLY;INTERVAL=1;BYHOUR=9;BYMINUTE=30;COUNT=1
+         i.putExtra(CalendarContract.Events.RRULE, "FREQ=HOURLY;INTERVAL=1;BYHOUR=9;BYMINUTE=30;COUNT=1");
 //        i.putExtra("rule", "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
         i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, pref.getData(EndTime,System.currentTimeMillis()+nineHrthirtyMin));
         i.putExtra(CalendarContract.Events.TITLE, "Punch In and Out");

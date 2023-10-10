@@ -56,7 +56,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
             // Send notification and log the transition details.
             sendNotification(geofenceTransitionDetails);
-//            Log.i(TAG, geofenceTransitionDetails);
+            Log.i(TAG, geofenceTransitionDetails);
         } else {
             // Log the error.
             Log.e(TAG, context.getString(R.string.geofence_transition_invalid_type, geofenceTransition));
@@ -105,7 +105,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
         // Get a PendingIntent containing the entire back stack.
         PendingIntent notificationPendingIntent =
-                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_MUTABLE);
 
         // Get a notification builder that's compatible with platform versions >= 4
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context,"geofence");
