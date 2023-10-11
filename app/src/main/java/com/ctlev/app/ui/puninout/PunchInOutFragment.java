@@ -630,8 +630,11 @@ public class PunchInOutFragment extends Fragment {
                 long endTime = todayData.optLong(Constants.EndTime, System.currentTimeMillis());
                 long diffTimeExtra = todayData.optLong(Constants.DiffOfDay, 0l);
                 long diffTime = endTime - (startTime+nineHrthirtyMin);
-                if(diffTime<fourHrfortyFive||diffTime<sixHr)
-                    diffTime=0;
+                long diffPos=(-1*diffTime);
+                if(diffTime<0 && (diffPos>threeHrthirtyMin)) {
+//                    -ve mean you went early like 8+9=17 15-17 =-3 six hour below is like half day
+                    diffTime = 0;
+                }
                 if(diffTime>twoHrthirtyMin)diffTime=twoHrthirtyMin;
                 extra+=diffTime;
             }
@@ -795,6 +798,7 @@ public class PunchInOutFragment extends Fragment {
     long nineHrthirtyMin= ((9*oneHR)+ (oneHR/2)); //34200000
     long twoHrthirtyMin= ((2*oneHR)+ (oneHR/2)); //  9000000
     long threeHrthirtyMin= ((3*oneHR)+ (oneHR/2)); //
+    long threeHr= (3*oneHR); //
     long sixHr= (6*oneHR); //  25200000
     long fourHrfortyFive=( (4*oneHR)+ (oneHR/2)+(15*oneMin)); //  25200000
     long sevenHrthirtyMin= ((7*oneHR)+ (oneHR/2)); //  25200000
